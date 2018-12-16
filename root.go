@@ -1,12 +1,15 @@
 package harbourauth
 
 import (
+	"crypto/rsa"
 	"database/sql"
 	"net/http"
 
 	"github.com/corneldamian/httpway"
+	"github.com/rs/cors"
 )
 
+var signKey *rsa.PrivateKey
 var server *httpway.Server
 var db *sql.DB
 
@@ -34,7 +37,8 @@ func Start() {
 	public.POST("/decode", decode)
 	public.POST("/register", register)
 
-	http.ListenAndServe(":5000", router)
+	handler := cors.Default().Handler(router) //enable access from all origins
+	http.ListenAndServe(":5000", handler)
 
 	server = httpway.NewServer(nil)
 	server.Addr = ":5000"

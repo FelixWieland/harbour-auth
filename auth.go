@@ -2,6 +2,7 @@ package harbourauth
 
 import (
 	"crypto/rsa"
+	"errors"
 	"io/ioutil"
 	"log"
 
@@ -12,7 +13,6 @@ import (
 //HarbourJWT Custom Type to Decode and Encode a JWT
 type HarbourJWT string
 
-var signKey *rsa.PrivateKey
 var verifyKey *rsa.PublicKey
 
 type userCredentials struct {
@@ -42,12 +42,17 @@ func LoadAsPrivateRSAKey(path string) (*rsa.PrivateKey, error) {
 }
 
 //Decode HarbourJWT
-func (HarbourJWT HarbourJWT) Decode(key *rsa.PrivateKey) jwt.Claims {
+func (HarbourJWT HarbourJWT) Decode(key *rsa.PrivateKey) (HarbourClaims, error) {
 	tokenString := HarbourJWT
-	token, _ := jwt.ParseWithClaims(string(tokenString), &HarbourClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return key, nil
-	})
-	return token.Claims
+	encodedClaims := &HarbourClaims{}
+	_, _, err := new(jwt.Parser).ParseUnverified(string(tokenString), encodedClaims)
+	if err == nil {
+		if encodedClaims.Valid() == nil {
+			return *encodedClaims, nil
+		}
+		err = errors.New("provided jwt is not valid")
+	}
+	return HarbourClaims{}, err
 }
 
 //Encode to encode Claims to a JWT

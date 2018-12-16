@@ -77,6 +77,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	//Create Harbour Claims
 	claims := HarbourClaims{}
+	foundResults := false
 
 	for rows.Next() {
 		var userid string
@@ -85,6 +86,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 		var created string
 
 		err = rows.Scan(&userid, &username, &password, &created)
+
+		foundResults = true
 
 		if bcrypt.CompareHashAndPassword([]byte(password), []byte(user.Password)) == nil {
 			//LOGIN SUCCESS
@@ -99,6 +102,13 @@ func login(w http.ResponseWriter, r *http.Request) {
 			}
 			break
 		}
+		w.WriteHeader(http.StatusForbidden)
+		apiError(w, r, newErrResponseLoginFailed())
+		return
+	}
+
+	if !foundResults {
+		//no such user
 		w.WriteHeader(http.StatusForbidden)
 		apiError(w, r, newErrResponseLoginFailed())
 		return
@@ -131,12 +141,17 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 func decode(w http.ResponseWriter, r *http.Request) {
 
-	key := r.FormValue("key")
+	jwt := r.FormValue("jwt")
 
-	if len(key) == 0 {
+	if len(jwt) == 0 {
 		w.Write([]byte("Not all Keys are satisfied"))
 	}
 
-	claims := HarbourJWT(key).Decode(signKey)
+	claims, err := HarbourJWT(jwt).Decode(signKey)
+	if err != nil {
+		log.Printf("%v", err)
+		return
+	}
+	//w.Write([]byte(claims))
 	log.Printf("%v", claims)
 }
