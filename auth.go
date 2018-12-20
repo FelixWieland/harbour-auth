@@ -24,6 +24,7 @@ type userCredentials struct {
 type HarbourClaims struct {
 	UserID   string `json:"UserID"`
 	Username string `json:"Username"`
+	Secret   string `json:"secret"`
 	jwt.StandardClaims
 }
 
@@ -42,12 +43,12 @@ func LoadAsPrivateRSAKey(path string) (*rsa.PrivateKey, error) {
 }
 
 //Decode HarbourJWT
-func (HarbourJWT HarbourJWT) Decode(key *rsa.PrivateKey) (HarbourClaims, error) {
+func (HarbourJWT HarbourJWT) Decode(key *rsa.PrivateKey, pSecret string) (HarbourClaims, error) {
 	tokenString := HarbourJWT
 	encodedClaims := &HarbourClaims{}
 	_, _, err := new(jwt.Parser).ParseUnverified(string(tokenString), encodedClaims)
 	if err == nil {
-		if encodedClaims.Valid() == nil {
+		if encodedClaims.Valid() == nil && encodedClaims.Secret == pSecret {
 			return *encodedClaims, nil
 		}
 		err = errors.New("provided jwt is not valid")

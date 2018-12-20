@@ -95,6 +95,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			claims = HarbourClaims{
 				userid,
 				username,
+				secret,
 				jwt.StandardClaims{
 					//ExpiresAt: 15000,
 					Issuer: "login",
@@ -147,7 +148,7 @@ func decode(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Not all Keys are satisfied"))
 	}
 
-	claims, err := HarbourJWT(jwt).Decode(signKey)
+	claims, err := HarbourJWT(jwt).Decode(signKey, secret)
 	if err != nil {
 		log.Printf("%v", err)
 		return
